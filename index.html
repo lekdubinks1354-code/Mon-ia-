@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon IA</title>
+<style>
+  body{font-family:sans-serif;margin:0;display:flex;flex-direction:column;height:100vh;background:#f4f4f5}
+  #chat{flex:1;overflow-y:auto;padding:16px}
+  .msg{max-width:80%;padding:10px 14px;border-radius:14px;margin:8px 0;white-space:pre-wrap}
+  .user{background:#2563eb;color:#fff;margin-left:auto}
+  .ia{background:#fff}
+  form{display:flex;gap:8px;padding:12px;background:#fff}
+  input{flex:1;padding:12px;font-size:16px;border:1px solid #ccc;border-radius:10px}
+  button{padding:12px 18px;font-size:16px;border:0;border-radius:10px;background:#2563eb;color:#fff}
+</style>
+</head>
+<body>
+<div id="chat"></div>
+<form id="form">
+  <input id="input" placeholder="Pose ta question..." autocomplete="off">
+  <button>Envoyer</button>
+</form>
+<script>
+const chat = document.getElementById("chat");
+const form = document.getElementById("form");
+const input = document.getElementById("input");
+let messages = [];
+
+function add(text, cls){
+  const d = document.createElement("div");
+  d.className = "msg " + cls;
+  d.textContent = text;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+  return d;
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = "";
+  add(text, "user");
+  messages.push({role:"user", content:text});
+  const wait = add("...", "ia");
+  try{
+    const r = await fetch("/api/chat", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({messages})
+    });
+    const data = await r.json();
+    wait.textContent = data.reply || data.error || "Erreur";
+    if(data.reply) messages.push({role:"assistant", content:data.reply});
+  }catch(err){
+    wait.textContent = "Erreur de connexion";
+  }
+});
+</script>
+</body>
+</html>
